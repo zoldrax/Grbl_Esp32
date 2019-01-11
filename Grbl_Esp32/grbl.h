@@ -76,3 +76,7 @@
 
 #include "servo_pen.h"
 #include "solenoid_pen.h"
+
+//#ifdef USE_KINEMATICS
+	#include "kinematics.h"
+//#endif

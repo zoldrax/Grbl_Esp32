@@ -24,16 +24,47 @@
 
 #include "grbl.h"
 
+void mc_line_kins(float *target, plan_line_data_t *pl_data, float *position)
+{
+	
+	static float last_angle = 0;
+	
+	float polar[N_AXIS];
+	
+	
+	
+	#ifndef USE_KINEMATICS
+	/*
+		grbl_sendf(CLIENT_SERIAL, "Last polar: %4.2f \r\n", last_angle);
+		calc_polar(target, polar, last_angle);
+		
+		last_angle = polar[POLAR_AXIS];
+		
+		grbl_sendf(CLIENT_SERIAL, "Polar: %4.2f \r\n", polar[POLAR_AXIS]);
+		grbl_sendf(CLIENT_SERIAL, "Radius: %4.2f \r\n", polar[RADIUS_AXIS]);
+		
+	*/
+		mc_line(target, pl_data);
+	#else // else use kinematics	
+		//grbl_send(CLIENT_SERIAL, "Kin...\r\n");
+		inverse_kinematics(target, pl_data, position);
+	#endif
+}
+
+
 
 // Execute linear motion in absolute millimeter coordinates. Feed rate given in millimeters/second
 // unless invert_feed_rate is true. Then the feed_rate means that the motion should be completed in
 // (1 minute)/feed_rate time.
 // NOTE: This is the primary gateway to the grbl planner. All line motions, including arc line
-// segments, must pass through this routine before being passed to the planner. The seperation of
+// segments, must pass through this routine before being passed to the planner. The separation of
 // mc_line and plan_buffer_line is done primarily to place non-planner-type functions from being
 // in the planner and to let backlash compensation or canned cycle integration simple and direct.
 void mc_line(float *target, plan_line_data_t *pl_data)
 {	
+	//grbl_sendf(CLIENT_SERIAL, "mc: %4.2f %4.2f \r\n", target[X_AXIS], target[Y_AXIS]);
+	//grbl_sendf(CLIENT_SERIAL, "off_x: %4.2f \r\n", gc_state.coord_system[X_AXIS]+gc_state.coord_offset[X_AXIS]);
+	
   // If enabled, check for soft limit violations. Placed here all line motions are picked up
   // from everywhere in Grbl.
   if (bit_istrue(settings.flags,BITFLAG_SOFT_LIMIT_ENABLE)) {
@@ -75,7 +106,7 @@ void mc_line(float *target, plan_line_data_t *pl_data)
 
 // Execute an arc in offset mode format. position == current xyz, target == target xyz,
 // offset == offset from current xyz, axis_X defines circle plane in tool space, axis_linear is
-// the direction of helical travel, radius == circle radius, isclockwise boolean. Used
+// the direction of helical travel, radius == circle radius, is clockwise boolean. Used
 // for vector transformation direction.
 // The arc is approximated by generating a huge number of tiny, linear segments. The chordal tolerance
 // of each segment is configured in settings.arc_tolerance, which is defined to be the maximum normal
@@ -390,3 +421,7 @@ void mc_reset()
 		
   }
 }
+
+
+
+

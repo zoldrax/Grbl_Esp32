@@ -46,7 +46,7 @@ Some features should not be changed. See notes below.
 // one configuration file by placing their specific defaults and pin map at the bottom of this file.
 // If doing so, simply comment out these two defines and see instructions below.
 #define DEFAULTS_GENERIC
-#define CPU_MAP_ESP32
+#define CPU_MAP_POLAR_COASTER
 #define VERBOSE_HELP // adds addition help info, but could confuse some senders
 
 // Serial baud rate
@@ -255,6 +255,8 @@ Some features should not be changed. See notes below.
 // described, if not, motions may move in strange directions. Grbl requires the CoreXY A and B motors
 // have the same steps per mm internally.
 // #define COREXY // Default disabled. Uncomment to enable.
+
+#define USE_KINEMATICS
 
 // Enable using a servo for the Z axis on a pen type machine.
 // You typically should not define a pin for the Z axis in cpu_map.h
