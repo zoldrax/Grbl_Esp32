@@ -22,7 +22,7 @@
 #define RADIUS_AXIS 0
 #define POLAR_AXIS 1
 
-#define SEGMENT_LENGTH 1.0 // segment length in mm
+#define SEGMENT_LENGTH 0.5 // segment length in mm
 
 #ifndef kinematics_h
   #define kinematics_h

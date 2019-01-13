@@ -73,10 +73,7 @@ uint8_t gc_execute_line(char *line, uint8_t client)
      updates these modes and commands as the block line is parser and will only be used and
      executed after successful error-checking. The parser block struct also contains a block
      values struct, word tracking variables, and a non-modal commands tracker for the new
-     block. This struct contains all of the necessary information to execute the block. */
-
-		 
-	grbl_sendf(CLIENT_SERIAL, "GC_EX: %s \r\n", line);	 
+     block. This struct contains all of the necessary information to execute the block. */	
 		 
   memset(&gc_block, 0, sizeof(parser_block_t)); // Initialize the parser block struct.
   memcpy(&gc_block.modal,&gc_state.modal,sizeof(gc_modal_t)); // Copy current modes
@@ -1065,9 +1062,8 @@ uint8_t gc_execute_line(char *line, uint8_t client)
 				mc_line_kins(gc_block.values.xyz, pl_data, gc_state.position);
       } else if (gc_state.modal.motion == MOTION_MODE_SEEK) {
         pl_data->condition |= PL_COND_FLAG_RAPID_MOTION; // Set rapid motion condition flag.
-				//grbl_sendf(CLIENT_SERIAL, "Position: %4.2f %4.2f %4.2f \r\n", gc_state.position[X_AXIS], gc_state.position[Y_AXIS], gc_state.position[Z_AXIS]);
-				//grbl_sendf(CLIENT_SERIAL, "Target: %4.2f %4.2f %4.2f \r\n", gc_block.values.xyz[X_AXIS], gc_block.values.xyz[Y_AXIS], gc_block.values.xyz[Z_AXIS]);
-        mc_line(gc_block.values.xyz, pl_data);
+        //mc_line(gc_block.values.xyz, pl_data);
+				mc_line_kins(gc_block.values.xyz, pl_data, gc_state.position);
       } else if ((gc_state.modal.motion == MOTION_MODE_CW_ARC) || (gc_state.modal.motion == MOTION_MODE_CCW_ARC)) {
         mc_arc(gc_block.values.xyz, pl_data, gc_state.position, gc_block.values.ijk, gc_block.values.r,
             axis_0, axis_1, axis_linear, bit_istrue(gc_parser_flags,GC_PARSER_ARC_IS_CLOCKWISE));

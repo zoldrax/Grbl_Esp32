@@ -3,8 +3,8 @@
   Part of Grbl_ESP32
 
   Copyright (c) 2019 Barton Dring @buildlog
-      
-	 
+
+
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
@@ -17,37 +17,37 @@
 
   You should have received a copy of the GNU General Public License
   along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
-	
+
 	Inverse kinematics determine the joint parameters required to get to a position
-	in 3D space. Grbl will still work as 3 axes of steps, but these steps could 
+	in 3D space. Grbl will still work as 3 axes of steps, but these steps could
 	represent angles, etc instead of linear units.
-	
+
 	Unless forward kinematics are applied to the reporting, Grbl will report raw joint
 	values instead of the normal Cartesian positions
-	
+
 	How it works...
-	
+
 	If you tell it to go to X10 Y10 Z10 in Cartesian space, for example, the equations
-  will convert those values to the required joint values. In the case of a polar machine, X represents the radius, 
-	Y represents the polar degrees and Z would be unchanged. 
-	
-	In most cases, a straight line in Cartesian space could cause a curve in the new system. 
-	To fix this, the line is broken into very small segments and each segment is converted 
+  will convert those values to the required joint values. In the case of a polar machine, X represents the radius,
+	Y represents the polar degrees and Z would be unchanged.
+
+	In most cases, a straight line in Cartesian space could cause a curve in the new system.
+	To fix this, the line is broken into very small segments and each segment is converted
 	to the new space. While each segment is also distorted, the amount is so small it cannot be seen.
-	
+
 	This segmentation is how normal Grbl draws arcs.
-	
+
 	Feed Rate
-	
+
 	Feed rate is given in steps/time. Due to the new coordinate units and non linearity issues, the
 	feed rate may need to be adjusted. The ratio of the step distances in the original coordinate system
 	determined and applied to the feed rate.
-	
+
 	TODO:
 		Add y offset, for completeness
 		Add ZERO_NON_HOMED_AXES option
-	
-	
+
+
 */
 #include "grbl.h"
 
@@ -55,85 +55,87 @@
 
 /*
  Apply inverse kinematics for a polar system
- 
+
  float target: 							The desired target location in machine space
  plan_line_data_t *pl_data: Plan information like feed rate, etc
- float *position:						The previous "from" location of the move 
- 
+ float *position:						The previous "from" location of the move
+
  Note: It is assumed only the radius axis is homed and only X and Z have offsets
- 
- 
+
+
 */
-void inverse_kinematics(float *target, plan_line_data_t *pl_data, float *position) 
+void inverse_kinematics(float *target, plan_line_data_t *pl_data, float *position)
 {
 	static float last_angle = 0;
-	static float last_radius = 0;	
-	
+	static float last_radius = 0;
+
 	float dx, dy, dz; // distances in each axis
 	float p_dx, p_dy, p_dz; // distances in each polar axis
-	
+
 	float dist, polar_dist; // the distances in both systems...used to determine feed rate
-	float new_feedrate;  // 
-	
+	float new_feedrate;  //
+
 	uint32_t segment_count;  // number of segments the move will be broken in to.
-	float seg_target[N_AXIS]; // The target of the current segment	
-	
-	float polar[N_AXIS];	
-	
-	float x_offset = gc_state.coord_system[X_AXIS]+gc_state.coord_offset[X_AXIS]; // offset of current 	
-	float z_offset = gc_state.coord_system[Z_AXIS]+gc_state.coord_offset[Z_AXIS]; // offset of current
-		
-	grbl_sendf(CLIENT_SERIAL, "Position: %4.2f %4.2f %4.2f \r\n", position[X_AXIS] - x_offset, position[Y_AXIS], position[Z_AXIS]);
-	grbl_sendf(CLIENT_SERIAL, "Target: %4.2f %4.2f %4.2f \r\n", target[X_AXIS] - x_offset, target[Y_AXIS], target[Z_AXIS]);	
-	
+	float seg_target[N_AXIS]; // The target of the current segment
+
+	float polar[N_AXIS]; // target location in polar coordinates
+
+	float x_offset = gc_state.coord_system[X_AXIS]+gc_state.coord_offset[X_AXIS]; // offset from machine coordinate system
+	float z_offset = gc_state.coord_system[Z_AXIS]+gc_state.coord_offset[Z_AXIS]; // offset from machine coordinate system
+
+	//grbl_sendf(CLIENT_SERIAL, "Position: %4.2f %4.2f %4.2f \r\n", position[X_AXIS] - x_offset, position[Y_AXIS], position[Z_AXIS]);
+	//grbl_sendf(CLIENT_SERIAL, "Target: %4.2f %4.2f %4.2f \r\n", target[X_AXIS] - x_offset, target[Y_AXIS], target[Z_AXIS]);
+
 	// calculate move distance for each axis
 	dx = target[X_AXIS] - position[X_AXIS];
 	dy = target[Y_AXIS] - position[Y_AXIS];
 	dz = target[Z_AXIS] - position[Z_AXIS];
-	
+
 	// calculate the total 2 axis move distance
 	// Z axis is the same in both coord systems
-	dist = sqrt( (dx * dx) + (dy * dy) + (dz * dz));		
-	
-	if (pl_data->condition & PL_COND_FLAG_RAPID_MOTION) 
-		segment_count = 1; // rapid G0 motion is not used to draw, so skip the segmentation
-	else
-		segment_count = ceil(dist / SEGMENT_LENGTH);  // determine the number of segments we need	... round up so there is at least 1
-	
+	dist = sqrt( (dx * dx) + (dy * dy) + (dz * dz));
+
+	if (pl_data->condition & PL_COND_FLAG_RAPID_MOTION) {
+		segment_count = 1;    // rapid G0 motion is not used to draw, so skip the segmentation
+	} else {
+		segment_count = ceil(dist / SEGMENT_LENGTH);    // determine the number of segments we need	... round up so there is at least 1
+	}
+
 	dist /= segment_count;  //
-	
-	
+
+
 	for(uint32_t segment = 1; segment <= segment_count; segment++) {
 		// determine this segment's target
 		seg_target[X_AXIS] = position[X_AXIS] + (dx / float(segment_count) * segment) - x_offset;
 		seg_target[Y_AXIS] = position[Y_AXIS] + (dy / float(segment_count) * segment);
 		seg_target[Z_AXIS] = position[Z_AXIS] + (dz / float(segment_count) * segment) - z_offset;
-		
+
 		calc_polar(seg_target, polar, last_angle);
-		
+
 		// calculate move distance for each axis
 		p_dx = polar[RADIUS_AXIS] - last_radius;
 		p_dy = polar[POLAR_AXIS] - last_angle;
 		p_dz = dz;
-		
+
 		polar_dist = sqrt( (p_dx * p_dx) + (p_dy * p_dy) +(p_dz * p_dz)); // calculate the total move distance
-		
-		if (polar_dist == 0 || dist == 0)  // prevent 0 feed rate
-			polar_dist = dist; // default to same feed rate
-			
+
+		if (polar_dist == 0 || dist == 0) { // prevent 0 feed rate
+			polar_dist = dist;    // default to same feed rate
+		}
+
 		pl_data->feed_rate *= polar_dist / dist;  // apply the distance ratio between coord systems
-			
+
 		polar[RADIUS_AXIS] += x_offset;
 		polar[Z_AXIS] += z_offset;
-		
+
 		last_radius = polar[RADIUS_AXIS];
-		last_angle = polar[POLAR_AXIS];		
-		
-		grbl_sendf(CLIENT_SERIAL, "Polar: %4.2f \r\n", polar[POLAR_AXIS]);
-		//grbl_sendf(CLIENT_SERIAL, "Radius: %4.2f \r\n", polar[RADIUS_AXIS]);	
-		
+		last_angle = polar[POLAR_AXIS];
+
+		//grbl_sendf(CLIENT_SERIAL, "Polar: %4.2f \r\n", polar[POLAR_AXIS]);
+		//grbl_sendf(CLIENT_SERIAL, "Radius: %4.2f \r\n", polar[RADIUS_AXIS]);
+
 		mc_line(polar, pl_data);
-	}	
+	}
 }
 
 // helper functions
@@ -143,50 +145,45 @@ void inverse_kinematics(float *target, plan_line_data_t *pl_data, float *positio
 * 	float target_xyz:	An array of target axis positions in Cartesian (xyz) space
 *		float polar: 			An array to return the polar values
 *		float last_angle:	The polar angle of the "from" point.
+*
+*   Angle calculated is 0 to 360, but you don't want a line to go from 350 to 10. This would
+*   be a long line backwards. You want it to go from 350 to 370. The same is true going the other way.
+*
+*   This means the angle could accumulate to very high positive or negative values over the coarse of
+*   a long job.
+*
 */
 void calc_polar(float *target_xyz, float *polar, float last_angle)
 {
-	float delta_ang; // the difference from the last and next angle	
+	float delta_ang; // the difference from the last and next angle
 	
-	// determine the new polar values
+	target_xyz[X_AXIS] *= -1.0;   // compensate for my radial axis being mirrored (right side) from normal 0deg
+  // determine the new polar values
 	polar[POLAR_AXIS] = atan2(target_xyz[Y_AXIS], target_xyz[X_AXIS]) * 180.0 / M_PI;
+	
 	// no negative angles
-	if (polar[POLAR_AXIS] < 0.0)
-		polar[POLAR_AXIS] = 360.0 + polar[POLAR_AXIS];	
-	
-	polar[RADIUS_AXIS] = hypot_f(target_xyz[X_AXIS], target_xyz[Y_AXIS]);	
-	
-	polar[Z_AXIS] = target_xyz[Z_AXIS]; // unchanged
-	
-	// we need to take the shortest path to the next angle
-	/*
-	if ( fabs(polar[POLAR_AXIS] - last_angle) > 180.0) {
-		grbl_sendf(CLIENT_SERIAL, "Crossing last,next: %4.2f,%4.2f\r\n", last_angle, polar[POLAR_AXIS]);
-		if (fmod(last_angle, 360.0) > 180) { // bottom half of circle
-			polar[POLAR_AXIS] += 360.0;
-		} else { // top half of circle
-			polar[POLAR_AXIS] -= 360.0;
-		}		
-	}	
-	*/
-	
-	delta_ang = polar[POLAR_AXIS] - fmod(last_angle, 360.0);
-	//delta_ang = polar[POLAR_AXIS] - last_angle;
-	
-	if ( fabs(delta_ang) <= 180.0) {
-		 polar[POLAR_AXIS] = last_angle + delta_ang;
+	if (polar[POLAR_AXIS] < 0.0) {
+		polar[POLAR_AXIS] = 360.0 + polar[POLAR_AXIS];
 	}
-	else {	
-		grbl_sendf(CLIENT_SERIAL, "Crossing last,next: %4.2f,%4.2f\r\n", last_angle, polar[POLAR_AXIS]);
-		if (fmod(last_angle, 360.0) > 180.0){			
+
+	polar[RADIUS_AXIS] = hypot_f(target_xyz[X_AXIS], target_xyz[Y_AXIS]);
+
+	polar[Z_AXIS] = target_xyz[Z_AXIS]; // Z is unchanged
+
+	delta_ang = polar[POLAR_AXIS] - fmod(last_angle, 360.0); // what is the difference from the last angle
+
+	// if the delta is above 180 degrees it means we are crossing the 0 degree line
+	if ( fabs(delta_ang) <= 180.0) {
+		polar[POLAR_AXIS] = last_angle + delta_ang;
+	} else {
+		if (fmod(last_angle, 360.0) > 180.0) {
+			//grbl_sendf(CLIENT_SERIAL, "Crossing up last,next: %4.2f,%4.2f\r\n", last_angle, polar[POLAR_AXIS]);
 			polar[POLAR_AXIS]  = last_angle + delta_ang + 360.0;
-		}		
-		else {
+		} else {
+			//grbl_sendf(CLIENT_SERIAL, "Crossing down last,next: %4.2f,%4.2f\r\n", last_angle, polar[POLAR_AXIS]);
 			polar[POLAR_AXIS] = last_angle - (360.0 - delta_ang);
-		}			
-	}	
-	
-	
+		}
+	}
 }
 
 #endif
