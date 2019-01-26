@@ -239,6 +239,8 @@
 		#define USE_PEN_SERVO
 		#define SERVO_PEN_PIN 					GPIO_NUM_16
 		
+		#define USE_KINEMATICS
+		
 		// redefine some stuff from config.h
 		#define HOMING_CYCLE_0 (1<<X_AXIS) // this 'bot only homes the X axis
 		#ifdef HOMING_CYCLE_1
@@ -303,41 +305,5 @@
 		
 #endif
 
-	// ================= common to all machines ================================
-	
-	// These are some ESP32 CPU Settings that the program needs, but are generally not changed
-		#define F_TIMERS	80000000    // a reference to the speed of ESP32 timers
-		#define F_STEPPER_TIMER 20000000  // frequency of step pulse timer
-		#define STEPPER_OFF_TIMER_PRESCALE 8 // gives a frequency of 10MHz
-		#define STEPPER_OFF_PERIOD_uSEC  3  // each tick is
-		
-		#define STEP_PULSE_MIN 2   // uSeconds
-		#define STEP_PULSE_MAX 10  // uSeconds
-		
-		// =============== Don't change or comment these out ======================
-		// They are for legacy purposes and will not affect your I/O 
-		
-		#define X_STEP_BIT    0  // don't change
-		#define Y_STEP_BIT    1  // don't change
-		#define Z_STEP_BIT    2  // don't change
-		#define STEP_MASK       B111 // don't change
-		
-		#define X_DIRECTION_BIT   0 // don't change
-		#define Y_DIRECTION_BIT   1  // don't change
-		#define Z_DIRECTION_BIT   2  // don't change
-		
-		#define X_LIMIT_BIT      	0  // don't change
-		#define Y_LIMIT_BIT      	1  // don't change
-		#define Z_LIMIT_BIT     	2  // don't change
-		
-		
-		#define PROBE_MASK        1 // don't change		
-		
-		#define CONTROL_MASK      				B1111  	// don't change
-		#define INVERT_CONTROL_PIN_MASK   B1110		// don't change
-		
-		// =======================================================================
-		
-		
-#endif
+
 
