@@ -8,7 +8,10 @@
 // !!! For initial testing, start with test_drive.h which disables
 // all I/O pins
 // #include "Machines/atari_1020.h"
-#    include "Machines/test_drive.h"
+#include "Machines/Milly4X.h"
+
+// ATC Implementation by der-Frickler.net
+#define CUSTOM_CODE_FILENAME    "Custom/atc_iso10.cpp"
 
 // !!! For actual use, change the line above to select a board
 // from Machines/, for example:
