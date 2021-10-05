@@ -1,5 +1,7 @@
 /*
 
+ ATTENTION! just a trial implementation, use with care!
+
  based on bdrings test implementation for ATC
  https://github.com/bdring/Grbl_Esp32/blob/ATC_DontUse/Grbl_Esp32/Custom/atc.cpp
 
@@ -10,13 +12,12 @@
  inject normal gcode commands to complete the tool change and return to the point where the
  tool change occured.
 
- This uses a X position rack. The first position is a tool setter. The other 4 are 
- ATC collets. 
+ This uses a X position rack and a toolsetter on a fixed position.
  
  To grab a tool you go above the tool, open the chuck, go down to the
- grab height,, then close the chuck.
+ grab height, then close the chuck, then move out of the toolholder
 
- To release a tool you go to the grab height, open the chuck, drop the tool, raise
+ To release a tool you go in front of the toolholder, move in, open the chuck, drop the tool, raise
  to the top and close the checks
 
  The spindle must not be spinning when the chuck is open or the ATC seals will be destroyed. If 
@@ -36,23 +37,14 @@
 
 */
 
-const int   TOOL_COUNT     = 5;
-const int   ETS_INDEX      = 0;     // electronic tool setter index
-const float TOOL_GRAB_TIME = 1.0;  // seconds. How long it takes to grab a tool
-#ifndef ATC_MANUAL_CHANGE_TIME
-#    define ATC_MANUAL_CHANGE_TIME 5000  // milliseconds ATC is open
-#endif
-
-#ifndef ATC_EMPTY_SAFE_HEIGHT
-#    define ATC_EMPTY_SAFE_HEIGHT -50.0  // safe X travel over tools while empty
-#endif
+const int   TOOL_COUNT     = 5;    // Number of places in the toolholder
 
 // Absolute machine position of the toolsetter probe
 const float ETS_X = -7.0;
 const float ETS_Y = -52.0;
 const float ETS_Z = -55.0;
 
-// Absolute machine position of the toolholder rack - tool 1 // Rack Center: -90, Tool Distance 35mm
+// Absolute machine position of the toolholder rack - tool 1 // For me: Rack Center=-90, Tool Distance=35mm
 const float TOOL_RACK_X = -160.0;
 const float TOOL_RACK_Y = -0.50;
 const float TOOL_RACK_Z = -45.0;
@@ -73,6 +65,16 @@ const float RELEASE_OFFSET_Y = 0.0;
 const float RELEASE_OFFSET_Z = 35.0;
 
 
+const float TOOL_GRAB_TIME = 1.0;  // seconds. How long it takes to grab a tool
+#ifndef ATC_MANUAL_CHANGE_TIME
+#    define ATC_MANUAL_CHANGE_TIME 5000  // milliseconds ATC is open
+#endif
+
+#ifndef ATC_EMPTY_SAFE_HEIGHT
+#    define ATC_EMPTY_SAFE_HEIGHT -50.0  // safe X travel over tools while empty
+#endif
+
+const int   ETS_INDEX      = 0;    // electronic tool setter index - just for the tool array
 typedef struct {
     float mpos[MAX_N_AXIS];    // the pickup location in machine coords
     float offset[MAX_N_AXIS];  // TLO from the zero'd tool
@@ -421,6 +423,7 @@ bool atc_manual_change() {
         return false;
     }
 
+    gc_exec_linef(true, "G4P%0.2f", ATC_MANUAL_CHANGE_TIME); // wait for grab to complete and settle
     vTaskDelay(ATC_MANUAL_CHANGE_TIME);
 
     if (!set_ATC_open(false)) {
