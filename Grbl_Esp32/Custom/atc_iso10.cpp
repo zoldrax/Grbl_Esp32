@@ -64,6 +64,7 @@ const float RELEASE_OFFSET_X = 0.0;
 const float RELEASE_OFFSET_Y = 0.0;
 const float RELEASE_OFFSET_Z = 35.0;
 
+const float TOOL_GRAB_OFFSET  = 15.0;  // Vertical pulloff on which the ATC has to open/cLose
 
 const float TOOL_GRAB_TIME = 1.0;  // seconds. How long it takes to grab a tool
 #ifndef ATC_MANUAL_CHANGE_TIME
@@ -202,7 +203,10 @@ bool atc_tool_change(uint8_t new_tool, bool automatic) {
     grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t Go over new tool");
     gc_exec_linef(true, "G53 G0 X%0.3f Y%0.3f Z%0.3f", tool[new_tool].mpos[X_AXIS]+RELEASE_OFFSET_X, tool[new_tool].mpos[Y_AXIS]+RELEASE_OFFSET_Y, tool[new_tool].mpos[Z_AXIS]+RELEASE_OFFSET_Z);
 
-    set_ATC_open(true);                                               // open ATC
+    gc_exec_linef(true, "G53 G0 X%0.3f Y%0.3f Z%0.3f", tool[new_tool].mpos[X_AXIS]+RELEASE_OFFSET_X, tool[new_tool].mpos[Y_AXIS]+RELEASE_OFFSET_Y, tool[new_tool].mpos[Z_AXIS]+TOOL_GRAB_OFFSET);
+
+    set_ATC_open(true); // open ATC
+
     // drop down to tool
     grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t drop down to tool");
     gc_exec_linef(true, "G53 G1 F300 X%0.3f Y%0.3f Z%0.3f", tool[new_tool].mpos[X_AXIS], tool[new_tool].mpos[Y_AXIS], tool[new_tool].mpos[Z_AXIS]);
@@ -211,7 +215,7 @@ bool atc_tool_change(uint8_t new_tool, bool automatic) {
 
     // move out of toolclip with grabed tool
     grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t move out of toolclip with grabed tool");
-    gc_exec_linef(true, "G53 G1 F300 X%0.3f Y%0.3f Z%0.3f", tool[new_tool].mpos[X_AXIS]+LOAD_OFFSET_X, tool[new_tool].mpos[Y_AXIS]+LOAD_OFFSET_Y, tool[new_tool].mpos[Z_AXIS]+LOAD_OFFSET_Z);
+    gc_exec_linef(true, "G53 G0 X%0.3f Y%0.3f Z%0.3f", tool[new_tool].mpos[X_AXIS]+LOAD_OFFSET_X, tool[new_tool].mpos[Y_AXIS]+LOAD_OFFSET_Y, tool[new_tool].mpos[Z_AXIS]+LOAD_OFFSET_Z);
         
     grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t Move Z Up");
     gc_exec_linef(true, "G53 G0 Z%0.3f", tool[new_tool].mpos[Z_AXIS]+RELEASE_OFFSET_Z);  
@@ -327,8 +331,11 @@ bool return_tool(uint8_t tool_num) {
 
     // Move on top of Toolclip
     grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t Move on top of Toolclip");
-    gc_exec_linef(true, "G53 G1 F300 X%0.3f Y%0.3f Z%0.3f", tool[tool_num].mpos[X_AXIS]+RELEASE_OFFSET_X, tool[tool_num].mpos[Y_AXIS]+RELEASE_OFFSET_Y, tool[tool_num].mpos[Z_AXIS]+RELEASE_OFFSET_Z);
+    gc_exec_linef(true, "G53 G1 F300 X%0.3f Y%0.3f Z%0.3f", tool[tool_num].mpos[X_AXIS]+RELEASE_OFFSET_X, tool[tool_num].mpos[Y_AXIS]+RELEASE_OFFSET_Y, tool[tool_num].mpos[Z_AXIS]+TOOL_GRAB_OFFSET);
+    
     set_ATC_open(false);   // close ATC
+
+    gc_exec_linef(true, "G53 G0 X%0.3f Y%0.3f Z%0.3f", tool[tool_num].mpos[X_AXIS]+RELEASE_OFFSET_X, tool[tool_num].mpos[Y_AXIS]+RELEASE_OFFSET_Y, tool[tool_num].mpos[Z_AXIS]+RELEASE_OFFSET_Z);
 
     return true;
 }
