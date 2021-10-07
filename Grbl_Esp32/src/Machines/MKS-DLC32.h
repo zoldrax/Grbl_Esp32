@@ -35,6 +35,11 @@
 
 #define MACHINE_NAME            "MKS-DLC32"
 
+// OLED connected to the i2c header
+#define OLED_SDA GPIO_NUM_0
+#define OLED_SCL GPIO_NUM_4
+#define DISPLAY_CODE_FILENAME   "Custom/oled_basic.cpp"
+
 // I2S (steppers & other output-only pins)
 #define USE_I2S_OUT
 #define USE_I2S_STEPS
