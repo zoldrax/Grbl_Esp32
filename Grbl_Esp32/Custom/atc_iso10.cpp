@@ -172,11 +172,19 @@ bool atc_tool_change(uint8_t new_tool, bool automatic) {
     grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t Move Z to Top");
     gc_exec_linef(true, "G53 G0 Z%0.3f", top_of_z);  
 
+    // hack to check if we are not "behind" the rack....
+    grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t Current Y Pos:%0.3f", saved_mpos[Y_AXIS]);
+        
+    if (saved_mpos[Y_AXIS] > (TOOL_RACK_Y+LOAD_OFFSET_Y)) {
+        grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t We are behind the rack -> move in front Y:%0.3f", (TOOL_RACK_Y+LOAD_OFFSET_Y));
+        gc_exec_linef(true, "G53 G0 Y%0.3f", (TOOL_RACK_Y+LOAD_OFFSET_Y));
+    }
+
 
     if (!return_tool(current_tool)) {  // does nothing if we have no tool
         // Go on Top of new Tool
-        grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t Go on Top of new Tool Z:Z%0.3f", top_of_z);
-        gc_exec_linef(true, "G53 G0 X%0.3f Y%0.3f Z%0.3f", tool[new_tool].mpos[X_AXIS], tool[new_tool].mpos[Y_AXIS], top_of_z);
+        grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t Go on Top of new Tool Z:%0.3f", top_of_z);
+        gc_exec_linef(true, "G53 G0 X%0.3f Y%0.3f Z%0.3f", tool[new_tool].mpos[X_AXIS], tool[new_tool].mpos[Y_AXIS], tool[new_tool].mpos[Z_AXIS]+RELEASE_OFFSET_Z);
     }
     current_tool = 0;
 
@@ -195,9 +203,9 @@ bool atc_tool_change(uint8_t new_tool, bool automatic) {
 
     grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "ATC Loading Tool:%d", new_tool);
 
-    // Move Z to Top
-    grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t Move Z to Top");
-    gc_exec_linef(true, "G53 G0 Z%0.3f", top_of_z);  
+    //// Move Z to Top
+    //grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t Move Z to Top");
+    //gc_exec_linef(true, "G53 G0 Z%0.3f", top_of_z);  
 
     // Go over new tool
     grbl_msg_sendf(CLIENT_SERIAL, MsgLevel::Info, "\t\t Go over new tool");
