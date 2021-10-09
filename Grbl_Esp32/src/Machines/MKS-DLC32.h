@@ -57,10 +57,11 @@
 
 #define X_STEP_PIN              I2SO(1)
 #define X_DIRECTION_PIN         I2SO(2)
-#define Y_STEP_PIN              I2SO(3)
-#define Y_DIRECTION_PIN         I2SO(4)
-#define Z_STEP_PIN              I2SO(5)
-#define Z_DIRECTION_PIN         I2SO(6)
+#define Y_STEP_PIN              I2SO(5)
+#define Y_DIRECTION_PIN         I2SO(6)
+#define Z_STEP_PIN              I2SO(3)
+#define Z_DIRECTION_PIN         I2SO(4)
+#define DEFAULT_DIRECTION_INVERT_MASK    (bit(X_AXIS) | bit(Y_AXIS) | bit(Z_AXIS))
 
 #define X_LIMIT_PIN             GPIO_NUM_36 // Sensor_VP
 #define Y_LIMIT_PIN             GPIO_NUM_35
